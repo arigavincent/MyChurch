@@ -86,14 +86,17 @@ function createUpload(relativeDirectory, options = {}) {
   if (process.env.CLOUDINARY_CLOUD_NAME) {
     storage = new CloudinaryStorage({
       cloudinary: cloudinary,
-      params: {
-        folder: `church-app/${relativeDirectory.replace(/\\/g, '/')}`,
-        resource_type: 'auto',
-        public_id: (_req, file) => {
-          const extension = path.extname(file.originalname || '').toLowerCase();
-          const baseName = path.basename(file.originalname || '', extension);
-          return `${Date.now()}-${baseName.substring(0, 50)}`;
-        },
+      params: async (req, file) => {
+        const isVideo = file.mimetype?.startsWith('video/');
+        const isAudio = file.mimetype?.startsWith('audio/');
+        
+        return {
+          folder: `church-app/${relativeDirectory.replace(/\\/g, '/')}`,
+          resource_type: (isVideo || isAudio) ? 'video' : 'auto',
+          public_id: `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+          // Explicitly set format for videos to ensure .mp4 extensions in URLs
+          format: isVideo ? 'mp4' : undefined,
+        };
       },
     });
   } else {
@@ -984,7 +987,15 @@ app.put('/api/admin/config/verse-of-day', authenticate, requireAdmin, asyncHandl
   res.json({ verse });
 }));
 
-app.post('/api/admin/uploads/sermons/audio', authenticate, requireAdmin, sermonAudioUpload.single('file'), asyncHandler(async (req, res) => {
+app.post('/api/admin/uploads/sermons/audio', authenticate, requireAdmin, (req, res, next) => {
+  sermonAudioUpload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Audio upload error:', err);
+      return next(err);
+    }
+    next();
+  });
+}, asyncHandler(async (req, res) => {
   if (!req.file) {
     throw createError(400, 'Audio file is required');
   }
@@ -997,7 +1008,15 @@ app.post('/api/admin/uploads/sermons/audio', authenticate, requireAdmin, sermonA
   });
 }));
 
-app.post('/api/admin/uploads/sermons/video', authenticate, requireAdmin, sermonVideoUpload.single('file'), asyncHandler(async (req, res) => {
+app.post('/api/admin/uploads/sermons/video', authenticate, requireAdmin, (req, res, next) => {
+  sermonVideoUpload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Video upload error:', err);
+      return next(err);
+    }
+    next();
+  });
+}, asyncHandler(async (req, res) => {
   if (!req.file) {
     throw createError(400, 'Video file is required');
   }
@@ -1010,7 +1029,15 @@ app.post('/api/admin/uploads/sermons/video', authenticate, requireAdmin, sermonV
   });
 }));
 
-app.post('/api/admin/uploads/clips/video', authenticate, requireAdmin, clipVideoUpload.single('file'), asyncHandler(async (req, res) => {
+app.post('/api/admin/uploads/clips/video', authenticate, requireAdmin, (req, res, next) => {
+  clipVideoUpload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Clip upload error:', err);
+      return next(err);
+    }
+    next();
+  });
+}, asyncHandler(async (req, res) => {
   if (!req.file) {
     throw createError(400, 'Video file is required');
   }

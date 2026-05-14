@@ -285,7 +285,7 @@ export function getVideoPlaybackKind(value) {
   const text = trimText(value);
   if (!text) return 'none';
   if (getYouTubeVideoId(text)) return 'youtube';
-  if (text.includes('/uploads/')) return 'file';
+  if (text.includes('/uploads/') || text.includes('cloudinary.com')) return 'file';
   if (/\.(mp4|m4v|mov|webm|m3u8)(?:$|[?#])/i.test(text)) return 'file';
   return 'external';
 }
