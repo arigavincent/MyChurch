@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Shekinah Sons Global",
+    "slug": "shekinah-sons-global",
+    "scheme": "shekinahsonsglobal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#05070D"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mychurch.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#102241"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.mychurch.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "theme": {
+        "primary": "#1D4F91",
+        "accent": "#D4AF37"
+      },
+      "eas": {
+        "projectId": "46e038e1-3ac9-43c9-a006-875f997ea734"
+      }
+    },
+    "plugins": [
+      "expo-video",
+      "expo-web-browser"
+    ]
+  }
+}
