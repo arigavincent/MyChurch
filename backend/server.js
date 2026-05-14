@@ -6,7 +6,17 @@ const crypto = require('node:crypto');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { OAuth2Client } = require('google-auth-library');
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const { query, withTransaction } = require('./lib/db');
 const { runMigrations } = require('./lib/migrations');
 const { BRAND_NAME, GIVING_ACCOUNT_REF } = require('./branding');
@@ -71,14 +81,33 @@ function createUpload(relativeDirectory, options = {}) {
     maxSizeMb = 250,
   } = options;
 
-  return multer({
-    storage: multer.diskStorage({
+  let storage;
+
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    storage = new CloudinaryStorage({
+      cloudinary: cloudinary,
+      params: {
+        folder: `church-app/${relativeDirectory.replace(/\\/g, '/')}`,
+        resource_type: 'auto',
+        public_id: (_req, file) => {
+          const extension = path.extname(file.originalname || '').toLowerCase();
+          const baseName = path.basename(file.originalname || '', extension);
+          return `${Date.now()}-${baseName.substring(0, 50)}`;
+        },
+      },
+    });
+  } else {
+    storage = multer.diskStorage({
       destination: (_req, _file, callback) => callback(null, path.join(uploadsDir, relativeDirectory)),
       filename: (_req, file, callback) => {
         const extension = path.extname(file.originalname || '').toLowerCase();
         callback(null, `${Date.now()}-${crypto.randomUUID()}${extension}`);
       },
-    }),
+    });
+  }
+
+  return multer({
+    storage,
     limits: {
       fileSize: maxSizeMb * 1024 * 1024,
     },
@@ -960,9 +989,11 @@ app.post('/api/admin/uploads/sermons/audio', authenticate, requireAdmin, sermonA
     throw createError(400, 'Audio file is required');
   }
 
+  const url = req.file.path || buildUploadUrl(req, path.join('sermons', 'audio', req.file.filename));
+
   res.status(201).json({
-    url: buildUploadUrl(req, path.join('sermons', 'audio', req.file.filename)),
-    fileName: req.file.filename,
+    url,
+    fileName: req.file.filename || req.file.public_id,
   });
 }));
 
@@ -971,9 +1002,11 @@ app.post('/api/admin/uploads/sermons/video', authenticate, requireAdmin, sermonV
     throw createError(400, 'Video file is required');
   }
 
+  const url = req.file.path || buildUploadUrl(req, path.join('sermons', 'video', req.file.filename));
+
   res.status(201).json({
-    url: buildUploadUrl(req, path.join('sermons', 'video', req.file.filename)),
-    fileName: req.file.filename,
+    url,
+    fileName: req.file.filename || req.file.public_id,
   });
 }));
 
@@ -982,9 +1015,11 @@ app.post('/api/admin/uploads/clips/video', authenticate, requireAdmin, clipVideo
     throw createError(400, 'Video file is required');
   }
 
+  const url = req.file.path || buildUploadUrl(req, path.join('clips', 'video', req.file.filename));
+
   res.status(201).json({
-    url: buildUploadUrl(req, path.join('clips', 'video', req.file.filename)),
-    fileName: req.file.filename,
+    url,
+    fileName: req.file.filename || req.file.public_id,
   });
 }));
 
