@@ -3,6 +3,8 @@ import { LogIn } from 'lucide-react';
 import { loginAdmin } from '../api';
 import { ADMIN_NAME, BRAND_NAME } from '../branding';
 
+const BRAND_LOGO_URL = `${import.meta.env.BASE_URL}brand-logo.jpg`;
+
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,7 @@ export default function Login({ onLogin }) {
     <div className='login-shell'>
       <div className='panel login-card'>
         <div className='login-brand'>
-          <img className='login-logo' src='/brand-logo.jpg' alt={BRAND_NAME} />
+          <img className='login-logo' src={BRAND_LOGO_URL} alt={BRAND_NAME} />
           <div>
             <p className='eyebrow'>{ADMIN_NAME}</p>
             <h2 className='login-brand-name'>{BRAND_NAME}</h2>

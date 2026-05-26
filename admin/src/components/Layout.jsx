@@ -14,6 +14,7 @@ const links = [
   { to: '/events', label: 'Events', icon: CalendarDays },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
+const BRAND_LOGO_URL = `${import.meta.env.BASE_URL}brand-logo.jpg`;
 
 export default function Layout({ children, user, onLogout }) {
   const { isDark, toggleMode } = useAdminTheme();
@@ -33,7 +34,7 @@ export default function Layout({ children, user, onLogout }) {
       />
       <aside className={`sidebar panel ${menuOpen ? 'sidebar-open' : ''}`}>
         <div className='brand-lockup'>
-          <img className='brand-mark brand-mark-image' src='/brand-logo.jpg' alt={BRAND_NAME} />
+          <img className='brand-mark brand-mark-image' src={BRAND_LOGO_URL} alt={BRAND_NAME} />
           <div className='brand-lockup-copy'>
             <h2>{BRAND_NAME}</h2>
             <span>Content Command Center</span>
