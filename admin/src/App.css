@@ -54,6 +54,10 @@ code {
   padding: 20px;
 }
 
+.sidebar-overlay {
+  display: none;
+}
+
 .content-shell {
   min-width: 0;
 }
@@ -114,6 +118,30 @@ code {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.sidebar-close,
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--mc-border);
+  border-radius: 14px;
+  background: var(--mc-surface-soft);
+  color: var(--mc-text);
+  cursor: pointer;
+}
+
+.sidebar-close {
+  width: 42px;
+  height: 42px;
+  margin-left: auto;
+}
+
+.menu-toggle {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
 }
 
 .brand-lockup-copy {
@@ -193,6 +221,10 @@ code {
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+}
+
+.top-bar-title {
+  min-width: 0;
 }
 
 .top-bar-actions {
@@ -614,25 +646,76 @@ code {
   }
 
   .sidebar {
+    position: fixed;
+    inset: 16px auto 16px 16px;
+    width: min(320px, calc(100vw - 32px));
+    z-index: 40;
     padding: 18px;
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 180ms ease, opacity 180ms ease;
+    overflow-y: auto;
+  }
+
+  .sidebar-open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    display: block;
+    background: rgba(5, 7, 13, 0.58);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+    z-index: 30;
+    backdrop-filter: blur(4px);
+  }
+
+  .sidebar-overlay-visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .sidebar-nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    display: flex;
+    grid-template-columns: none;
+  }
+
+  .menu-toggle,
+  .sidebar-close {
+    display: inline-flex;
   }
 }
 
 @media (max-width: 720px) {
+  .admin-shell {
+    gap: 14px;
+    padding: 14px;
+  }
+
   .top-bar,
   .page-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
+  .top-bar {
+    padding: 18px;
+  }
+
   .top-bar-actions {
     width: 100%;
     flex-wrap: wrap;
+  }
+
+  .top-bar-toggle {
+    width: 100%;
+    justify-content: center;
   }
 
   .form-grid,
