@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { useTheme } from '../hooks/ThemeContext';
 import { fetchVerseOfDay } from '../services/api';
@@ -12,6 +13,7 @@ const fallbackVerse = {
 };
 
 export default function VerseScreen() {
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const [verse, setVerse] = useState(fallbackVerse);
@@ -63,6 +65,11 @@ export default function VerseScreen() {
         <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.9}>
           <Ionicons name="share-social-outline" size={18} color={theme.colors.textOnAccent} />
           <Text style={styles.shareButtonText}>Share this verse</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Bible')} activeOpacity={0.9}>
+          <Ionicons name="book-outline" size={18} color={theme.colors.accent} />
+          <Text style={styles.secondaryButtonText}>Open the full Bible</Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
@@ -148,6 +155,23 @@ function createStyles(theme) {
     },
     shareButtonText: {
       color: theme.colors.textOnAccent,
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    secondaryButton: {
+      marginTop: theme.spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.md,
+      paddingVertical: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+    },
+    secondaryButtonText: {
+      color: theme.colors.accent,
       fontSize: 15,
       fontWeight: '800',
     },

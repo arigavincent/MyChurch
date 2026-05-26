@@ -1,0 +1,8 @@
+Shekinah_V2/
+.client-preview/
+ShekinahSonsGlobal-client-preview.apk
+android/app/build/
+android/build/
+ios/build/
+backend/uploads/
+/tmp/

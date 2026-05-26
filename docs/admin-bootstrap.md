@@ -21,8 +21,8 @@ docker compose up -d --build
 
 Default values:
 
-- email: `admin@mychurch.local`
-- password: `changeme123`
+- email: `ariga.dev@gmail.com`
+- password: `ariga123`
 
 3. If you want to promote a different account, update it in Postgres:
 

@@ -52,8 +52,10 @@ const { createError } = require('./lib/errors');
 const { getAccessToken, stkPush, queryStatus } = require('./mpesa');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = Number.parseInt(process.env.PORT || '3000', 10);
 const uploadsDir = path.join(__dirname, 'uploads');
+const publicDir = path.join(__dirname, 'public');
 const sermonAudioUploadsDir = path.join(uploadsDir, 'sermons', 'audio');
 const sermonVideoUploadsDir = path.join(uploadsDir, 'sermons', 'video');
 const clipVideoUploadsDir = path.join(uploadsDir, 'clips', 'video');
@@ -72,6 +74,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 app.use('/uploads', express.static(uploadsDir));
+app.get('/privacy-policy', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'privacy-policy.html'));
+});
 
 function createUpload(relativeDirectory, options = {}) {
   const {
@@ -220,9 +225,60 @@ function buildUploadUrl(req, relativePath) {
   return `${getPublicApiBaseUrl(req)}/uploads/${relativePath.replace(/\\/g, '/')}`;
 }
 
-async function listRows(table, orderBy) {
+function normalizeUploadUrl(req, value) {
+  const text = cleanText(value);
+  if (!text || !text.includes('/uploads/')) return value;
+
+  const publicBase = getPublicApiBaseUrl(req);
+
+  if (text.startsWith('/uploads/')) {
+    return `${publicBase}${text}`;
+  }
+
+  try {
+    const parsed = new URL(text);
+    if (parsed.pathname.startsWith('/uploads/')) {
+      return `${publicBase}${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`;
+    }
+  } catch (_error) {
+    const uploadIndex = text.indexOf('/uploads/');
+    if (uploadIndex >= 0) {
+      return `${publicBase}${text.slice(uploadIndex)}`;
+    }
+  }
+
+  return value;
+}
+
+function normalizePublicUrls(req, value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizePublicUrls(req, item));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, innerValue]) => [key, normalizePublicUrls(req, innerValue)])
+    );
+  }
+
+  if (typeof value === 'string') {
+    return normalizeUploadUrl(req, value);
+  }
+
+  return value;
+}
+
+function serializeRowForRequest(req, row) {
+  return normalizePublicUrls(req, camelizeRow(row));
+}
+
+function serializeRowsForRequest(req, rows) {
+  return rows.map((row) => serializeRowForRequest(req, row));
+}
+
+async function listRows(req, table, orderBy) {
   const result = await query(`SELECT * FROM ${table} ORDER BY ${orderBy}`);
-  return serializeRows(result.rows);
+  return serializeRowsForRequest(req, result.rows);
 }
 
 async function getRowById(table, id) {
@@ -317,7 +373,7 @@ async function verifyGoogleIdentity(idToken) {
   return payload;
 }
 
-async function getDashboardPayload() {
+async function getDashboardPayload(req) {
   const countsResult = await query(`
     SELECT
       (SELECT COUNT(*)::INT FROM sermons) AS sermons,
@@ -348,12 +404,12 @@ async function getDashboardPayload() {
 
   return {
     counts: camelizeRow(countsResult.rows[0]),
-    recent: serializeRows(recentResult.rows),
+    recent: serializeRowsForRequest(req, recentResult.rows),
     config: camelizeRow(configResult.rows[0]),
   };
 }
 
-async function getHomePayload() {
+async function getHomePayload(req) {
   const [configResult, verseResult, latestDevotion, latestSermon, clips, events] = await Promise.all([
     query('SELECT * FROM app_config WHERE id = 1'),
     query('SELECT * FROM verse_of_day WHERE id = 1'),
@@ -366,14 +422,14 @@ async function getHomePayload() {
   return {
     appConfig: configResult.rows[0] ? camelizeRow(configResult.rows[0]) : null,
     verse: verseResult.rows[0] ? camelizeRow(verseResult.rows[0]) : null,
-    latestDevotion: latestDevotion.rows[0] ? camelizeRow(latestDevotion.rows[0]) : null,
-    latestSermon: latestSermon.rows[0] ? camelizeRow(latestSermon.rows[0]) : null,
-    clips: serializeRows(clips.rows),
-    events: serializeRows(events.rows),
+    latestDevotion: latestDevotion.rows[0] ? serializeRowForRequest(req, latestDevotion.rows[0]) : null,
+    latestSermon: latestSermon.rows[0] ? serializeRowForRequest(req, latestSermon.rows[0]) : null,
+    clips: serializeRowsForRequest(req, clips.rows),
+    events: serializeRowsForRequest(req, events.rows),
   };
 }
 
-async function listPrayerRequests() {
+async function listPrayerRequests(req) {
   const result = await query(`
     SELECT
       prayer_requests.*,
@@ -388,10 +444,10 @@ async function listPrayerRequests() {
     ORDER BY prayer_requests.created_at DESC
   `);
 
-  return serializeRows(result.rows);
+  return serializeRowsForRequest(req, result.rows);
 }
 
-async function getPrayerComments(requestId) {
+async function getPrayerComments(req, requestId) {
   const result = await query(
     `
       SELECT *
@@ -402,7 +458,7 @@ async function getPrayerComments(requestId) {
     [requestId]
   );
 
-  return serializeRows(result.rows);
+  return serializeRowsForRequest(req, result.rows);
 }
 
 async function updateDonationByCheckoutId(checkoutRequestId, updates) {
@@ -608,8 +664,8 @@ app.put('/api/auth/me', authenticate, asyncHandler(async (req, res) => {
   res.json({ user: sanitizeUser(updated.rows[0]) });
 }));
 
-app.get('/api/app/home', asyncHandler(async (_req, res) => {
-  res.json(await getHomePayload());
+app.get('/api/app/home', asyncHandler(async (req, res) => {
+  res.json(await getHomePayload(req));
 }));
 
 app.get('/api/app/config', asyncHandler(async (_req, res) => {
@@ -637,39 +693,39 @@ app.get('/api/app/sermons', asyncHandler(async (req, res) => {
     params
   );
 
-  res.json({ sermons: serializeRows(result.rows) });
+  res.json({ sermons: serializeRowsForRequest(req, result.rows) });
 }));
 
-app.get('/api/app/devotions', asyncHandler(async (_req, res) => {
-  res.json({ devotions: await listRows('devotions', 'published_at DESC') });
+app.get('/api/app/devotions', asyncHandler(async (req, res) => {
+  res.json({ devotions: await listRows(req, 'devotions', 'published_at DESC') });
 }));
 
-app.get('/api/app/clips', asyncHandler(async (_req, res) => {
-  res.json({ clips: await listRows('short_clips', 'published_at DESC') });
+app.get('/api/app/clips', asyncHandler(async (req, res) => {
+  res.json({ clips: await listRows(req, 'short_clips', 'published_at DESC') });
 }));
 
-app.get('/api/app/events', asyncHandler(async (_req, res) => {
-  res.json({ events: await listRows('events', 'starts_at ASC') });
+app.get('/api/app/events', asyncHandler(async (req, res) => {
+  res.json({ events: await listRows(req, 'events', 'starts_at ASC') });
 }));
 
-app.get('/api/app/groups', asyncHandler(async (_req, res) => {
-  res.json({ groups: await listRows('groups', 'name ASC') });
+app.get('/api/app/groups', asyncHandler(async (req, res) => {
+  res.json({ groups: await listRows(req, 'groups', 'name ASC') });
 }));
 
-app.get('/api/app/bible-plan', asyncHandler(async (_req, res) => {
-  res.json({ plans: await listRows('bible_plan', 'day ASC') });
+app.get('/api/app/bible-plan', asyncHandler(async (req, res) => {
+  res.json({ plans: await listRows(req, 'bible_plan', 'day ASC') });
 }));
 
-app.get('/api/app/testimonies', asyncHandler(async (_req, res) => {
-  res.json({ testimonies: await listRows('testimonies', 'created_at DESC') });
+app.get('/api/app/testimonies', asyncHandler(async (req, res) => {
+  res.json({ testimonies: await listRows(req, 'testimonies', 'created_at DESC') });
 }));
 
-app.get('/api/app/prayer-requests', asyncHandler(async (_req, res) => {
-  res.json({ requests: await listPrayerRequests() });
+app.get('/api/app/prayer-requests', asyncHandler(async (req, res) => {
+  res.json({ requests: await listPrayerRequests(req) });
 }));
 
 app.get('/api/app/prayer-requests/:requestId/comments', asyncHandler(async (req, res) => {
-  res.json({ comments: await getPrayerComments(req.params.requestId) });
+  res.json({ comments: await getPrayerComments(req, req.params.requestId) });
 }));
 
 app.post('/api/app/testimonies', asyncHandler(async (req, res) => {
@@ -927,20 +983,20 @@ app.get('/api/me/donations', authenticate, asyncHandler(async (req, res) => {
   res.json({ donations: serializeRows(result.rows) });
 }));
 
-app.get('/api/admin/dashboard', authenticate, requireAdmin, asyncHandler(async (_req, res) => {
-  res.json(await getDashboardPayload());
+app.get('/api/admin/dashboard', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await getDashboardPayload(req));
 }));
 
 Object.entries(ADMIN_RESOURCES).forEach(([route, config]) => {
-  app.get(`/api/admin/${route}`, authenticate, requireAdmin, asyncHandler(async (_req, res) => {
-    res.json({ items: await listRows(config.table, config.orderBy) });
+  app.get(`/api/admin/${route}`, authenticate, requireAdmin, asyncHandler(async (req, res) => {
+    res.json({ items: await listRows(req, config.table, config.orderBy) });
   }));
 
   app.post(`/api/admin/${route}`, authenticate, requireAdmin, asyncHandler(async (req, res) => {
     const payload = config.prepare(req.body);
     const statement = buildInsertStatement(config.table, payload);
     const result = await query(statement.sql, statement.values);
-    res.status(201).json({ item: camelizeRow(result.rows[0]) });
+    res.status(201).json({ item: serializeRowForRequest(req, result.rows[0]) });
   }));
 
   app.put(`/api/admin/${route}/:id`, authenticate, requireAdmin, asyncHandler(async (req, res) => {
@@ -950,7 +1006,7 @@ Object.entries(ADMIN_RESOURCES).forEach(([route, config]) => {
     if (result.rowCount === 0) {
       throw createError(404, 'Item not found');
     }
-    res.json({ item: camelizeRow(result.rows[0]) });
+    res.json({ item: serializeRowForRequest(req, result.rows[0]) });
   }));
 
   app.delete(`/api/admin/${route}/:id`, authenticate, requireAdmin, asyncHandler(async (req, res) => {

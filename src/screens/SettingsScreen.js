@@ -15,20 +15,12 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import { useAuth } from '../hooks/AuthContext';
 import { useTheme } from '../hooks/ThemeContext';
 
+const BRAND_MARK = require('../../assets/icon.png');
+
 function getProviderLabel(user) {
   if (user?.authProvider === 'hybrid') return 'Email + Google';
   if (user?.authProvider === 'google' || user?.googleSub) return 'Google';
   return 'Email';
-}
-
-function getInitials(user) {
-  const source = user?.name || user?.email || '';
-  return source
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || '')
-    .join('') || 'SS';
 }
 
 export default function SettingsScreen() {
@@ -97,9 +89,7 @@ export default function SettingsScreen() {
               {user.avatarUrl ? (
                 <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
               ) : (
-                <View style={styles.avatarFallback}>
-                  <Text style={styles.avatarFallbackText}>{getInitials(user)}</Text>
-                </View>
+                <Image source={BRAND_MARK} style={styles.avatarImage} resizeMode='cover' />
               )}
               <View style={styles.heroCopy}>
                 <Text style={styles.eyebrow}>Settings</Text>

@@ -1,19 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MediaVideoPlayer from './MediaVideoPlayer';
 import { useTheme } from '../hooks/ThemeContext';
 import { getYouTubeVideoId } from '../../shared/contentModel';
-import { fetchAppConfig } from '../services/api';
+import { API_BASE, fetchAppConfig } from '../services/api';
 
 export default function LiveStreamSection() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadConfig = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const payload = await fetchAppConfig();
+      setConfig(payload || null);
+    } catch (loadError) {
+      setError(loadError.message || 'Could not load the live stream settings right now.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchAppConfig().then(setConfig).catch(() => {});
-  }, []);
+    loadConfig();
+  }, [loadConfig]);
 
   const isLive = !!config?.liveStreamEnabled && !!config?.liveStreamId;
   const videoId = getYouTubeVideoId(config?.liveStreamId || '');
@@ -31,8 +47,22 @@ export default function LiveStreamSection() {
         </View>
       </View>
 
-      {isLive && videoId ? (
-        <MediaVideoPlayer videoUrl={videoId} style={styles.playerCard} />
+      {loading ? (
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size='small' color={theme.colors.accent} />
+          <Text style={styles.loadingText}>Checking the stream status...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Could not load the live stream</Text>
+          <Text style={styles.errorBody}>{error}</Text>
+          <Text style={styles.debugHint}>Server: {API_BASE}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadConfig} activeOpacity={0.9}>
+            <Text style={styles.retryButtonText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : isLive && videoId ? (
+        <MediaVideoPlayer videoUrl={videoId} style={styles.playerCard} fullscreenTitle='Live stream' />
       ) : (
         <View style={styles.offlineCard}>
           <Ionicons name="tv-outline" size={36} color={theme.colors.accent} />
@@ -107,6 +137,58 @@ function createStyles(theme) {
       borderColor: theme.colors.border,
       marginBottom: theme.spacing.md,
       ...theme.shadows.md,
+    },
+    loadingCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      padding: theme.spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    loadingText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    errorCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      padding: theme.spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.danger,
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    errorTitle: {
+      color: theme.colors.text,
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    errorBody: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      lineHeight: 21,
+    },
+    debugHint: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    retryButton: {
+      alignSelf: 'flex-start',
+      backgroundColor: theme.colors.accent,
+      borderRadius: theme.radius.pill,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    retryButtonText: {
+      color: theme.colors.textOnAccent,
+      fontSize: 12,
+      fontWeight: '800',
     },
     offlineCard: {
       backgroundColor: theme.colors.surface,

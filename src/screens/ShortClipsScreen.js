@@ -17,7 +17,7 @@ import {
   getVideoPlaybackKind,
   relativeTimeFromDate,
 } from '../../shared/contentModel';
-import { fetchClips } from '../services/api';
+import { API_BASE, fetchClips } from '../services/api';
 
 const filters = [
   { key: 'all', label: 'All' },
@@ -205,6 +205,7 @@ export default function ShortClipsScreen() {
           <View style={styles.errorCard}>
             <Text style={styles.errorTitle}>Could not load clips</Text>
             <Text style={styles.errorBody}>{error}</Text>
+            <Text style={styles.debugHint}>Server: {API_BASE}</Text>
             <TouchableOpacity style={styles.retryButton} activeOpacity={0.9} onPress={loadClips}>
               <Text style={styles.retryButtonText}>Try again</Text>
             </TouchableOpacity>
@@ -544,6 +545,13 @@ function createStyles(theme) {
       color: theme.colors.textSecondary,
       fontSize: 14,
       lineHeight: 21,
+      marginBottom: theme.spacing.sm,
+    },
+    debugHint: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      fontWeight: '700',
+      marginBottom: theme.spacing.md,
     },
     retryButton: {
       alignSelf: 'flex-start',

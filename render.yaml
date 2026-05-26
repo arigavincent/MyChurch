@@ -23,7 +23,9 @@ services:
       - key: ADMIN_PASSWORD
         value: ariga123
       - key: ADMIN_NAME
-        value: Local Admin
+        value: Shekinah Sons Global Admin
+      - key: PUBLIC_API_BASE_URL
+        value: https://shekinah-sons-backend.onrender.com
       - key: GOOGLE_CLIENT_IDS
         value: 614968507436-blh0cv4db5b5k10d57ki9eltamms24nd.apps.googleusercontent.com
       - key: MPESA_CONSUMER_KEY
@@ -34,6 +36,8 @@ services:
         sync: false
       - key: MPESA_SHORTCODE
         value: "174379"
+      - key: MPESA_CALLBACK_URL
+        value: https://shekinah-sons-backend.onrender.com/api/mpesa/callback
       - key: MPESA_ENV
         value: sandbox
       - key: CLOUDINARY_CLOUD_NAME

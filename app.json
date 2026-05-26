@@ -33,12 +33,15 @@
         "accent": "#D4AF37"
       },
       "eas": {
-        "projectId": "46e038e1-3ac9-43c9-a006-875f997ea734"
+        "projectId": "03184d1e-c035-498d-9b53-e713e464c516"
       }
     },
     "plugins": [
       "expo-video",
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      "expo-sqlite",
+      "expo-font"
+    ],
+    "owner": "ethan_coder"
   }
 }

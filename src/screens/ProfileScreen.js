@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,8 @@ const GOOGLE_SCOPES = ['openid', 'profile', 'email'];
 const googleDiscovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
 };
+const BRAND_MARK = require('../../assets/icon.png');
+const GOOGLE_SIGN_IN_ENABLED = process.env.EXPO_PUBLIC_ENABLE_GOOGLE_SIGN_IN === 'true';
 
 function getActiveGoogleClientId() {
   if (Platform.OS === 'android') return process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
@@ -52,8 +55,8 @@ export default function ProfileScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [googleNonce] = useState(() => Math.random().toString(36).slice(2));
 
-  const googleClientId = getActiveGoogleClientId();
-  const googleConfigured = !!googleClientId;
+  const googleClientId = GOOGLE_SIGN_IN_ENABLED ? getActiveGoogleClientId() : '';
+  const googleConfigured = GOOGLE_SIGN_IN_ENABLED && !!googleClientId;
   const redirectUri = AuthSession.makeRedirectUri({
     scheme: 'shekinahsonsglobal',
     path: 'auth/google',
@@ -192,6 +195,14 @@ export default function ProfileScreen({ navigation }) {
       <ScreenWrapper>
         <ScrollView contentContainerStyle={styles.authScroll} showsVerticalScrollIndicator={false}>
           <View style={styles.accountCard}>
+            <View style={styles.brandRow}>
+              <Image source={BRAND_MARK} style={styles.brandMark} resizeMode='cover' />
+              <View style={styles.brandCopy}>
+                <Text style={styles.brandName}>Shekinah Sons Global</Text>
+                <Text style={styles.brandCaption}>Your private church account is now active on this device.</Text>
+              </View>
+            </View>
+
             <View style={styles.accountBadgeRow}>
               <View style={styles.accountBadge}>
                 <Ionicons name='shield-checkmark-outline' size={20} color={theme.colors.accent} />
@@ -207,7 +218,7 @@ export default function ProfileScreen({ navigation }) {
 
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => navigation.navigate('MainTabs', { screen: 'Settings' })}
+              onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.9}
             >
               <Ionicons name='settings-outline' size={18} color={theme.colors.textOnAccent} />
@@ -228,6 +239,14 @@ export default function ProfileScreen({ navigation }) {
     <ScreenWrapper>
       <ScrollView contentContainerStyle={styles.authScroll} showsVerticalScrollIndicator={false}>
         <View style={styles.authCard}>
+          <View style={styles.brandRow}>
+            <Image source={BRAND_MARK} style={styles.brandMark} resizeMode='cover' />
+            <View style={styles.brandCopy}>
+              <Text style={styles.brandName}>Shekinah Sons Global</Text>
+              <Text style={styles.brandCaption}>Secure sign-in for your private progress, notes, and giving history.</Text>
+            </View>
+          </View>
+
           <TouchableOpacity style={styles.appearanceRow} onPress={toggleMode} activeOpacity={0.9}>
             <View style={styles.rowLeft}>
               <Ionicons name={isDark ? 'moon-outline' : 'sunny-outline'} size={18} color={theme.colors.accent} />
@@ -239,7 +258,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.authEyebrow}>Profile and Private Features</Text>
           <Text style={styles.authTitle}>Welcome in. Save your progress, notes, and giving history with care.</Text>
           <Text style={styles.authBody}>
-            Sign in with email or continue with Google, then keep your private activity tied to one secure account.
+            Start with your email account first. Google stays available as an optional shortcut after the main account flow is working cleanly.
           </Text>
 
           <View style={styles.modeSwitch}>
@@ -263,26 +282,6 @@ export default function ProfileScreen({ navigation }) {
             >
               <Text style={[styles.modeButtonText, mode === 'register' && styles.modeButtonTextActive]}>Register</Text>
             </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.googleButton, googleUnavailableReason && styles.googleButtonDisabled]}
-            activeOpacity={0.9}
-            onPress={handleGoogleSignIn}
-            disabled={googleSubmitting}
-          >
-            <Ionicons name='logo-google' size={18} color={theme.colors.text} />
-            <Text style={styles.googleButtonText}>{googleSubmitting ? 'Connecting...' : 'Continue with Google'}</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.googleHelpText}>
-            {googleUnavailableReason || 'Google sign-in returns to this app after authentication and then syncs with your backend account.'}
-          </Text>
-
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or use email</Text>
-            <View style={styles.dividerLine} />
           </View>
 
           {message ? (
@@ -355,6 +354,30 @@ export default function ProfileScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
 
+          {GOOGLE_SIGN_IN_ENABLED ? (
+            <View style={styles.secondaryAuthBlock}>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>optional later</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.googleButton, googleUnavailableReason && styles.googleButtonDisabled]}
+                activeOpacity={0.9}
+                onPress={handleGoogleSignIn}
+                disabled={googleSubmitting}
+              >
+                <Ionicons name='logo-google' size={18} color={theme.colors.text} />
+                <Text style={styles.googleButtonText}>{googleSubmitting ? 'Connecting...' : 'Continue with Google'}</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.googleHelpText}>
+                {googleUnavailableReason || 'Google can still be connected here after email auth is in place.'}
+              </Text>
+            </View>
+          ) : null}
+
           <Text style={styles.footnote}>
             {mode === 'register'
               ? 'Your account is created directly on the church backend and stays available across devices.'
@@ -385,6 +408,32 @@ function createStyles(theme) {
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...theme.shadows.lg,
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    brandMark: {
+      width: 56,
+      height: 56,
+      borderRadius: 18,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    brandCopy: {
+      flex: 1,
+    },
+    brandName: {
+      color: theme.colors.text,
+      fontSize: 17,
+      fontWeight: '800',
+      marginBottom: 4,
+    },
+    brandCaption: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 19,
     },
     accountCard: {
       backgroundColor: theme.colors.surface,
@@ -498,7 +547,10 @@ function createStyles(theme) {
       fontSize: 12,
       lineHeight: 18,
       marginTop: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
+    },
+    secondaryAuthBlock: {
+      marginTop: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
     },
     dividerRow: {
       flexDirection: 'row',

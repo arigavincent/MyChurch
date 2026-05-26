@@ -1,6 +1,6 @@
-# MyChurch Admin Panel
+# Shekinah Sons Global Admin Panel
 
-A browser-based admin panel for managing MyChurch app content.
+A browser-based admin panel for managing Shekinah Sons Global app content.
 
 ## Features
 - **Sermons** — Add/edit/delete sermons with audio upload through the API
@@ -29,8 +29,8 @@ docker compose up -d --build
 
 Default local admin login:
 
-- email: `admin@mychurch.local`
-- password: `changeme123`
+- email: `ariga.dev@gmail.com`
+- password: `ariga123`
 
 ## Deploy
 

@@ -1,12 +1,20 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { useAuth } from '../hooks/AuthContext';
 import { useTheme } from '../hooks/ThemeContext';
 
+const BRAND_MARK = require('../../assets/icon.png');
+
 const menuItems = [
+  {
+    title: 'Bible',
+    description: 'Read the full Bible offline in English and Kiswahili, even when the network drops.',
+    icon: 'book-outline',
+    route: 'Bible',
+  },
   {
     title: 'Events',
     description: 'Services, conferences, youth nights, and church-wide gatherings.',
@@ -21,7 +29,7 @@ const menuItems = [
   },
   {
     title: 'Bible Plan',
-    description: 'Stay consistent with guided reading and track your progress.',
+    description: 'Stay consistent with guided reading and keep structure around your daily time in the Word.',
     icon: 'layers-outline',
     route: 'BiblePlan',
   },
@@ -56,22 +64,17 @@ export default function MoreScreen() {
   const { user } = useAuth();
   const { theme, isDark, toggleMode } = useTheme();
   const styles = createStyles(theme);
-  const items = [
-    ...menuItems,
-    user
-      ? {
-          title: 'Settings',
-          description: 'Manage your account, appearance, and private history from one place.',
-          icon: 'settings-outline',
-          route: 'Settings',
-        }
-      : {
+  const items = user
+    ? menuItems
+    : [
+        {
           title: 'Profile',
           description: 'Sign in, track your private notes, and manage your app preferences.',
           icon: 'person-circle-outline',
           route: 'Profile',
         },
-  ];
+        ...menuItems,
+      ];
 
   return (
     <ScreenWrapper>
@@ -96,6 +99,38 @@ export default function MoreScreen() {
           </View>
           <Text style={styles.appearanceMode}>{isDark ? 'Midnight' : 'Daylight'}</Text>
         </TouchableOpacity>
+
+        {user ? (
+          <View style={styles.accountCard}>
+            <View style={styles.accountTopRow}>
+              <Image source={BRAND_MARK} style={styles.accountLogo} resizeMode='cover' />
+              <View style={styles.accountCopy}>
+                <Text style={styles.accountEyebrow}>Signed In</Text>
+                <Text style={styles.accountTitle}>{user.name || 'Church family member'}</Text>
+                <Text style={styles.accountBody}>{user.email}</Text>
+              </View>
+              <Ionicons name='settings-outline' size={20} color={theme.colors.accent} />
+            </View>
+
+            <View style={styles.accountActions}>
+              <TouchableOpacity
+                style={styles.accountButtonPrimary}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('Settings')}
+              >
+                <Text style={styles.accountButtonPrimaryText}>Open settings</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.accountButtonSecondary}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <Text style={styles.accountButtonSecondaryText}>View account</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.grid}>
           {items.map((item) => (
@@ -194,6 +229,81 @@ function createStyles(theme) {
     appearanceMode: {
       color: theme.colors.accent,
       fontSize: 12,
+      fontWeight: '800',
+    },
+    accountCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      padding: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.md,
+      ...theme.shadows.sm,
+    },
+    accountTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    accountLogo: {
+      width: 54,
+      height: 54,
+      borderRadius: 18,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    accountCopy: {
+      flex: 1,
+    },
+    accountEyebrow: {
+      color: theme.colors.accent,
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.9,
+      marginBottom: 4,
+    },
+    accountTitle: {
+      color: theme.colors.text,
+      fontSize: 18,
+      fontWeight: '800',
+      marginBottom: 4,
+    },
+    accountBody: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    accountActions: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+    },
+    accountButtonPrimary: {
+      flex: 1,
+      backgroundColor: theme.colors.accent,
+      borderRadius: theme.radius.md,
+      paddingVertical: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    accountButtonPrimaryText: {
+      color: theme.colors.textOnAccent,
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    accountButtonSecondary: {
+      flex: 1,
+      backgroundColor: theme.colors.surfaceMuted,
+      borderRadius: theme.radius.md,
+      paddingVertical: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    accountButtonSecondaryText: {
+      color: theme.colors.text,
+      fontSize: 14,
       fontWeight: '800',
     },
     card: {

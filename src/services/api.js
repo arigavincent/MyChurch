@@ -1,7 +1,50 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+function extractHostname(value) {
+  if (!value || typeof value !== 'string') return '';
+
+  try {
+    const parsed = new URL(value.startsWith('http') ? value : `http://${value}`);
+    return parsed.hostname || '';
+  } catch {
+    return value
+      .replace(/^[a-z]+:\/\//i, '')
+      .split('/')[0]
+      .split(':')[0]
+      .trim();
+  }
+}
+
+function getDevServerHost() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.hostname || '';
+  }
+
+  const candidates = [
+    process.env.EXPO_PUBLIC_DEV_SERVER_HOST,
+    Constants.expoConfig?.hostUri,
+    Constants.manifest2?.extra?.expoClient?.hostUri,
+    Constants.linkingUri,
+    Constants.experienceUrl,
+  ];
+
+  for (const candidate of candidates) {
+    const host = extractHostname(candidate);
+    if (host) return host;
+  }
+
+  return '';
+}
+
 function getDefaultApiBase() {
+  const host = getDevServerHost();
+
+  if (host) {
+    return `http://${host}:4100`;
+  }
+
   if (Platform.OS === 'android') return 'http://10.0.2.2:4100';
   return 'http://localhost:4100';
 }
@@ -51,7 +94,7 @@ async function request(path, options = {}, config = {}) {
       headers,
     });
   } catch (_error) {
-    throw new Error('Could not reach the server. Check that the backend is running and your device can reach it.');
+    throw new Error(`Could not reach the server at ${API_BASE}. Check that Docker is running and your device can reach this computer over the same network.`);
   }
 
   const payload = await response.json().catch(() => ({}));

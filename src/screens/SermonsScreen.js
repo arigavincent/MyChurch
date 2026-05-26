@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import { useAudio } from '../hooks/AudioContext';
 import { useAuth } from '../hooks/AuthContext';
 import { useTheme } from '../hooks/ThemeContext';
 import { formatLongDateLabel, getVideoPlaybackKind } from '../../shared/contentModel';
-import { fetchSermons } from '../services/api';
+import { API_BASE, fetchSermons } from '../services/api';
 
 const filters = [
   { key: 'all', label: 'All' },
@@ -36,14 +36,28 @@ export default function SermonsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const loadSermons = useCallback(async () => {
     setLoading(true);
     setError('');
-    fetchSermons()
-      .then((payload) => setSermons(payload || []))
-      .catch(() => setError('Could not load sermons right now.'))
-      .finally(() => setLoading(false));
+
+    try {
+      const payload = await fetchSermons();
+      setSermons(payload || []);
+    } catch (loadError) {
+      setError(loadError.message || 'Could not load sermons right now.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSermons();
+  }, [loadSermons]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', loadSermons);
+    return unsubscribe;
+  }, [loadSermons, navigation]);
 
   const handlePlay = async (sermon) => {
     if (!sermon?.audioUrl) {
@@ -276,6 +290,10 @@ export default function SermonsScreen() {
           <View style={styles.errorCard}>
             <Text style={styles.errorTitle}>Could not load sermons</Text>
             <Text style={styles.errorBody}>{error}</Text>
+            <Text style={styles.debugHint}>Server: {API_BASE}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadSermons} activeOpacity={0.9}>
+              <Text style={styles.retryButtonText}>Try again</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.list}>
@@ -815,6 +833,25 @@ function createStyles(theme) {
       color: theme.colors.textSecondary,
       fontSize: 14,
       lineHeight: 20,
+    },
+    debugHint: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      fontWeight: '700',
+      marginTop: 2,
+      marginBottom: theme.spacing.sm,
+    },
+    retryButton: {
+      alignSelf: 'flex-start',
+      backgroundColor: theme.colors.accent,
+      borderRadius: theme.radius.pill,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    retryButtonText: {
+      color: theme.colors.textOnAccent,
+      fontSize: 12,
+      fontWeight: '800',
     },
     list: {
       gap: theme.spacing.md,

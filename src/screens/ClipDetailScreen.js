@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -12,13 +12,21 @@ export default function ClipDetailScreen({ route }) {
   const styles = createStyles(theme);
   const videoKind = getVideoPlaybackKind(clip.videoUrl);
   const canPlayInApp = videoKind === 'youtube' || videoKind === 'file';
+  const [isSharing, setIsSharing] = useState(false);
+  const [status, setStatus] = useState(null);
 
   const handleShare = async () => {
     const shareMessage = `${clip.title}\n${clip.description}${clip.videoUrl ? `\n${clip.videoUrl}` : ''}`;
     try {
+      setIsSharing(true);
+      setStatus({ tone: 'info', message: 'Preparing clip share options...' });
       await Share.share({ message: shareMessage, title: clip.title });
+      setStatus({ tone: 'success', message: 'Clip share is ready.' });
     } catch {
+      setStatus({ tone: 'danger', message: 'Could not share this clip right now.' });
       Alert.alert('Share Failed', 'Could not share this clip right now.');
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -27,12 +35,17 @@ export default function ClipDetailScreen({ route }) {
     : videoKind === 'file'
       ? 'Open in browser'
       : 'Open link';
+  const playbackLabel = useMemo(() => {
+    if (videoKind === 'youtube') return 'YouTube video playing in app';
+    if (videoKind === 'file') return 'Uploaded video playing in app';
+    return 'External video source';
+  }, [videoKind]);
 
   return (
     <ScreenWrapper>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {canPlayInApp ? (
-          <MediaVideoPlayer videoUrl={clip.videoUrl} style={styles.videoCard} />
+          <MediaVideoPlayer videoUrl={clip.videoUrl} style={styles.videoCard} fullscreenTitle={clip.title} />
         ) : (
           <View style={styles.placeholderCard}>
             <Ionicons name='play-circle-outline' size={56} color={theme.colors.accent} />
@@ -52,25 +65,59 @@ export default function ClipDetailScreen({ route }) {
           </View>
           <Text style={styles.title}>{clip.title}</Text>
           <Text style={styles.description}>{clip.description}</Text>
+          <View style={styles.metaChip}>
+            <Ionicons
+              name={videoKind === 'youtube' ? 'logo-youtube' : canPlayInApp ? 'play-circle-outline' : 'open-outline'}
+              size={15}
+              color={theme.colors.accent}
+            />
+            <Text style={styles.metaChipText}>{playbackLabel}</Text>
+          </View>
         </View>
+
+        {status ? (
+          <View style={[
+            styles.statusBanner,
+            status.tone === 'success' && styles.statusBannerSuccess,
+            status.tone === 'danger' && styles.statusBannerDanger,
+          ]}>
+            <Ionicons
+              name={status.tone === 'danger' ? 'alert-circle-outline' : status.tone === 'success' ? 'checkmark-circle-outline' : 'information-circle-outline'}
+              size={18}
+              color={status.tone === 'danger' ? '#FFFFFF' : theme.colors.text}
+            />
+            <Text style={[
+              styles.statusText,
+              status.tone === 'danger' && styles.statusTextDanger,
+            ]}>
+              {status.message}
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.actionRow}>
           {clip.videoUrl ? (
-            <TouchableOpacity style={styles.primaryButton} onPress={() => Linking.openURL(clip.videoUrl)} activeOpacity={0.9}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => Linking.openURL(clip.videoUrl)
+                .then(() => setStatus({ tone: 'info', message: 'Opening this clip outside the app.' }))
+                .catch(() => setStatus({ tone: 'danger', message: 'Could not open this clip right now.' }))}
+              activeOpacity={0.9}
+            >
               <Ionicons name='open-outline' size={18} color={theme.colors.textOnAccent} />
               <Text style={styles.primaryButtonText}>{openLabel}</Text>
             </TouchableOpacity>
           ) : null}
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleShare} activeOpacity={0.9}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleShare} activeOpacity={0.9} disabled={isSharing}>
             <Ionicons name='share-social-outline' size={18} color={theme.colors.text} />
-            <Text style={styles.secondaryButtonText}>Share clip</Text>
+            <Text style={styles.secondaryButtonText}>{isSharing ? 'Preparing share...' : 'Share clip'}</Text>
           </TouchableOpacity>
         </View>
 
         {Platform.OS === 'android' && canPlayInApp ? (
           <Text style={styles.footnote}>
-            Tip: tap fullscreen in the player for a cleaner viewing experience on your phone.
+            Tip: tap the expand button on the video to open a proper landscape fullscreen player.
           </Text>
         ) : null}
       </ScrollView>
@@ -155,6 +202,51 @@ function createStyles(theme) {
       color: theme.colors.textSecondary,
       fontSize: 15,
       lineHeight: 23,
+    },
+    metaChip: {
+      marginTop: theme.spacing.md,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: theme.radius.pill,
+      backgroundColor: theme.colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    metaChipText: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    statusBanner: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    statusBannerSuccess: {
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.surfaceRaised,
+    },
+    statusBannerDanger: {
+      backgroundColor: theme.colors.danger,
+      borderColor: theme.colors.danger,
+    },
+    statusText: {
+      color: theme.colors.text,
+      fontSize: 13,
+      flex: 1,
+    },
+    statusTextDanger: {
+      color: '#FFFFFF',
     },
     actionRow: {
       flexDirection: 'row',

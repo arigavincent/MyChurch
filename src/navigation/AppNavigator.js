@@ -9,6 +9,7 @@ import SermonsScreen from '../screens/SermonsScreen';
 import SermonDetailScreen from '../screens/SermonDetailScreen';
 import ShortClipsScreen from '../screens/ShortClipsScreen';
 import ClipDetailScreen from '../screens/ClipDetailScreen';
+import FullscreenVideoScreen from '../screens/FullscreenVideoScreen';
 import EventsScreen from '../screens/EventsScreen';
 import PrayerWallScreen from '../screens/PrayerWallScreen';
 import GivingScreen from '../screens/GivingScreen';
@@ -19,10 +20,10 @@ import ConnectScreen from '../screens/ConnectScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import TestimoniesScreen from '../screens/TestimoniesScreen';
 import VerseScreen from '../screens/VerseScreen';
+import BibleScreen from '../screens/BibleScreen';
 import MoreScreen from '../screens/MoreScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { AudioProvider } from '../hooks/AudioContext';
-import { useAuth } from '../hooks/AuthContext';
 import { useTheme } from '../hooks/ThemeContext';
 
 const RootStack = createNativeStackNavigator();
@@ -30,7 +31,6 @@ const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   const { theme } = useTheme();
-  const { user } = useAuth();
 
   const tabIcons = {
     Home: 'sparkles-outline',
@@ -38,7 +38,6 @@ function MainTabs() {
     Sermons: 'radio-outline',
     Clips: 'play-circle-outline',
     More: 'grid-outline',
-    Settings: 'settings-outline',
   };
 
   return (
@@ -86,7 +85,6 @@ function MainTabs() {
       <Tab.Screen name="Sermons" component={SermonsScreen} />
       <Tab.Screen name="Clips" component={ShortClipsScreen} />
       <Tab.Screen name="More" component={MoreScreen} />
-      {user ? <Tab.Screen name="Settings" component={SettingsScreen} /> : null}
     </Tab.Navigator>
   );
 }
@@ -113,15 +111,26 @@ export default function AppNavigator() {
         <RootStack.Screen name="DevotionDetail" component={DevotionDetailScreen} options={{ title: 'Devotion' }} />
         <RootStack.Screen name="SermonDetail" component={SermonDetailScreen} options={{ title: 'Sermon' }} />
         <RootStack.Screen name="ClipDetail" component={ClipDetailScreen} options={{ title: 'Clip' }} />
+        <RootStack.Screen
+          name="FullscreenVideo"
+          component={FullscreenVideoScreen}
+          options={{
+            headerShown: false,
+            presentation: 'fullScreenModal',
+            orientation: 'landscape',
+          }}
+        />
         <RootStack.Screen name="Events" component={EventsScreen} />
         <RootStack.Screen name="PrayerWall" component={PrayerWallScreen} options={{ title: 'Prayer Wall' }} />
         <RootStack.Screen name="Giving" component={GivingScreen} />
         <RootStack.Screen name="DonationHistory" component={DonationHistoryScreen} options={{ title: 'Giving History' }} />
         <RootStack.Screen name="Groups" component={GroupsScreen} />
         <RootStack.Screen name="Testimonies" component={TestimoniesScreen} />
+        <RootStack.Screen name="Bible" component={BibleScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="BiblePlan" component={BiblePlanScreen} options={{ title: 'Bible Plan' }} />
         <RootStack.Screen name="Connect" component={ConnectScreen} />
         <RootStack.Screen name="Profile" component={ProfileScreen} />
+        <RootStack.Screen name="Settings" component={SettingsScreen} />
         <RootStack.Screen name="Verse" component={VerseScreen} options={{ title: 'Verse of the Day' }} />
       </RootStack.Navigator>
     </AudioProvider>

@@ -9,15 +9,21 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://shekinah-sons-backend.onrender.com",
+        "EXPO_PUBLIC_ENABLE_GOOGLE_SIGN_IN": "false"
+      }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.69:4100"
-      },
-      "android": {
-        "buildType": "apk"
+        "EXPO_PUBLIC_API_BASE_URL": "https://shekinah-sons-backend.onrender.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "614968507436-blh0cv4db5b5k10d57ki9eltamms24nd.apps.googleusercontent.com",
+        "EXPO_PUBLIC_ENABLE_GOOGLE_SIGN_IN": "false"
       }
     }
   },

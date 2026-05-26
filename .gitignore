@@ -49,3 +49,7 @@ backend/.env
 # local workspace clutter
 home/
 tmp/
+.client-preview/
+ShekinahSonsGlobal-client-preview.apk
+Shekinah_V2/
+backend/uploads/
