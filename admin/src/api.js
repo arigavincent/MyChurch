@@ -1,4 +1,8 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4100').replace(/\/$/, '');
+const defaultApiBase = typeof window !== 'undefined'
+  ? window.location.origin
+  : 'http://localhost:4100';
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || defaultApiBase).replace(/\/$/, '');
 const TOKEN_KEY = 'mychurch_admin_token';
 
 export function getAdminToken() {

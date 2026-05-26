@@ -56,6 +56,7 @@ app.set('trust proxy', 1);
 const PORT = Number.parseInt(process.env.PORT || '3000', 10);
 const uploadsDir = path.join(__dirname, 'uploads');
 const publicDir = path.join(__dirname, 'public');
+const adminPublicDir = path.join(publicDir, 'admin');
 const sermonAudioUploadsDir = path.join(uploadsDir, 'sermons', 'audio');
 const sermonVideoUploadsDir = path.join(uploadsDir, 'sermons', 'video');
 const clipVideoUploadsDir = path.join(uploadsDir, 'clips', 'video');
@@ -1155,6 +1156,13 @@ app.post('/api/mpesa/status', asyncHandler(async (req, res) => {
   const result = await queryStatus(token, checkoutRequestId);
   res.json(result);
 }));
+
+if (fs.existsSync(adminPublicDir)) {
+  app.use('/admin', express.static(adminPublicDir));
+  app.get(['/admin', '/admin/*'], (_req, res) => {
+    res.sendFile(path.join(adminPublicDir, 'index.html'));
+  });
+}
 
 app.use((error, _req, res, _next) => {
   const status = error.status || 500;
